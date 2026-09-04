@@ -1,0 +1,24 @@
+# ===== 真实凭据 / 个人数据（切勿提交）=====
+config/weather.json
+config/weather_cache.json
+config/journal_cache.json
+
+# ===== samples：仅保留脱敏示例图，其余（真实看板/诊断/测试图）全部忽略 =====
+samples/*
+!samples/preview_example.png
+
+# ===== 独立子仓库（公开 POI 数据，单独维护，勿作为本仓库内容提交）=====
+LocationList/
+
+# ===== 本地运行产物 =====
+*.log
+.dash_server/
+
+# ===== 个人部署笔记（含真实 token；开源版请改用 README 的部署章节）=====
+真机拉图操作指南.md
+USB连接诊断与修复.md
+
+# ===== Python =====
+__pycache__/
+*.pyc
+.env

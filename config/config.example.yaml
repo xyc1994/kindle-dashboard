@@ -1,0 +1,60 @@
+schema_version: 1
+
+server:
+  bind: "0.0.0.0"
+  port: 8787
+  device_token_env: "KINDLE_DASHBOARD_TOKEN"
+
+storage:
+  database: "%LOCALAPPDATA%/KindleDashboard/data/dashboard.db"
+  cache_dir: "%LOCALAPPDATA%/KindleDashboard/cache"
+
+weather:
+  enabled: true
+  provider: "qweather"
+  api_version: "v1"
+  api_host_env: "QWEATHER_API_HOST"
+  auth_mode: "api_key"
+  api_key_env: "QWEATHER_API_KEY"
+  location_name: "上海市黄浦区"
+  latitude: 31.22
+  longitude: 121.49
+  legacy_location_id: "101020400"
+  language: "zh"
+  forecast_days: 3
+  refresh_interval: "2h"
+  stale_after: "6h"
+
+obsidian:
+  enabled: true
+  vault_path_env: "OBSIDIAN_VAULT_PATH"
+  memo_globs:
+    - "05_Memos/Memos_Active/**/*.md"
+  daily_globs:
+    - "01_Daily/**/*.md"
+  daily_required_tag: "#kindle"
+  writeback_enabled: false
+  rescan_interval: "15m"
+  debounce: "2s"
+
+codex:
+  enabled: true
+  app_server_command: "codex app-server --stdio"
+  status_poll_fallback: "15s"
+  rate_limit_poll_fallback: "5m"
+
+kindle:
+  width: 1072
+  height: 1448
+  orientation: "portrait"
+  control_poll: "5s"
+  battery_report: "5m"
+  full_refresh_interval: "10m"
+  full_refresh_after_partial_count: 5
+
+render:
+  locale: "zh-CN"
+  timezone: "Asia/Shanghai"
+  clock_refresh: "1m"
+  change_debounce: "3s"
+

@@ -1,0 +1,7 @@
+{
+  "_comment": "MiniMax CLI 调用配置。命令 mmx text chat：--system 给角色指令，--message 后接待总结的日记正文（prompt 即 {text}）。必须用 system+message 分离——把角色前缀混进 --message 会被 mmx 当成对话开头，导致收不到正文（且 mmx 有持久 session，会累积失败历史）。仅在日记 mtime 变化时调用一次；失败自动回退确定性抽取。",
+  "enabled": true,
+  "command": ["mmx", "text", "chat", "--system", "你是Kindle墨水屏看板的笔记摘要器。请用最多两句中文、换行分隔，总结以下今日日记的叙事要点（不要列清单、不要重复待办项，聚焦当天发生了什么、有什么结论）。", "--message"],
+  "prompt": "{text}",
+  "timeout": 90
+}

@@ -1,0 +1,21 @@
+# Kindle 看板 server.conf 示例（复制到 Kindle 的 /mnt/us/dashboard/server.conf 使用）
+# 仅当你的 Kindle 上 server.conf 缺少 HOST 或 TOKEN 时才需要覆盖；已有且正确的不要动。
+#
+# 注意：HOST 必须是 PC 端「当前」的内网 IP。若 PC 用 DHCP 且 IP 会变，
+#       请在路由器给 PC 做 DHCP 保留（绑定 MAC→固定 IP），否则 IP 一变 Kindle 就拉不到图。
+#       或用 dash.sh 的自动发现机制（见 README），无需手填 HOST。
+
+HOST=<你的PC当前内网IP，如 192.168.1.50>
+PORT=8765
+# TOKEN 由 kindle_ext_builder.py 自动从 PC 的 ~/.dash_server/token 填入；
+# 也可手动运行 `python src/dash_server.py --token <你自定义的随机串>` 生成。
+# 切勿使用他人仓库里的 token，每个部署应独立生成。
+TOKEN=<由 kindle_ext_builder.py 自动填入，或自行生成随机串>
+
+# 以下为可选覆盖项（不写则用 dash.sh 内置默认值）
+DAY_INTERVAL=60          # 白天刷新间隔（秒），1 分钟
+NIGHT_INTERVAL=3600      # 夜间刷新间隔（秒），1 小时
+NIGHT_START=1            # 夜间开始小时（含）
+NIGHT_END=6              # 夜间结束小时（不含）
+FULL_REFRESH_RATE=5      # 每 N 次局部刷新做一次全刷（防残影）
+DEF_FL=24                # 前光强度 0-24

@@ -1,0 +1,7 @@
+{
+  "_comment": "和风天气配置。推荐用环境变量注入（真实 key 不入库）：QWEATHER_API_KEY / QWEATHER_API_HOST。weather.py 优先读环境变量，缺失时回退本文件。",
+  "api_host": "YOUR_QWEATHER_API_HOST",
+  "api_key": "YOUR_QWEATHER_API_KEY",
+  "location_id": "101190401",
+  "location_name": "苏州"
+}

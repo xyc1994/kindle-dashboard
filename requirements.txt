@@ -1,0 +1,2 @@
+# 运行 dash_server / dashboard_renderer 所需
+Pillow>=10.0.0
