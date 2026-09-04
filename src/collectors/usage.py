@@ -191,15 +191,28 @@ def _call_codex_app_server_rate_limits(timeout: int = 30) -> Optional[Dict[str, 
     """启动 ``codex app-server`` 并通过 JSON-RPC 读取 ``account/rateLimits/read``。
 
     只拉取 rateLimits，3 秒左右可完成；不拉 account/usage 避免多花 20 多秒。
+
+    代理：codex CLI 默认不读 ``HTTPS_PROXY``，而 ``chatgpt.com`` 在国内常被屏蔽，
+    导致 ``error sending request for url https://chatgpt.com/backend-api/wham/usage``。
+    本函数把 ``HTTPS_PROXY`` / ``HTTP_PROXY`` / ``ALL_PROXY`` 显式透传给子进程环境，
+    配置后即可恢复 rateLimits 拉取。
     """
     exe = shutil.which("codex")
     if not exe:
         return None
 
+    # 把系统代理透传给 codex 子进程（避免 chatgpt.com 不可达）
+    env = os.environ.copy()
+    for k in ("HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy"):
+        v = os.environ.get(k)
+        if v:
+            env[k] = v
+
     proc = subprocess.Popen(
         [exe, "app-server"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, encoding="utf-8", bufsize=1,
+        env=env,
     )
 
     def send(msg: dict) -> None:
@@ -358,15 +371,20 @@ def _fetch_codex_rate_limits() -> Optional[Dict[str, Any]]:
 
 
 def get_codex_usage() -> ProviderUsage:
-    """Codex 用量：本地状态库给 token 累计，app-server JSON-RPC 给剩余配额。"""
+    """Codex 用量：本地状态库给 token 累计，app-server JSON-RPC 给剩余配额。
+
+    常见失败：``chatgpt.com`` 在国内网络下被屏蔽，codex 子进程拿不到
+    ``HTTPS_PROXY`` 导致 ``error sending request for url ...wham/usage``。
+    修复：在子进程 env 里显式透传 ``HTTPS_PROXY`` 等代理变量。
+    """
     lifetime, recent, active = _get_codex_local_log_usage()
 
     limits: Optional[Dict[str, Any]] = None
-    note = "app-server 无配额数据"
+    note = "app-server 不可达（chatgpt.com 不通）"
     try:
         limits = _fetch_codex_rate_limits()
     except Exception as e:
-        note = f"JSON-RPC 失败：{e}"
+        note = f"chatgpt.com 不可达：{e}"
 
     if limits:
         window_hours = limits.get("window_hours") or 0.0
@@ -405,7 +423,7 @@ def get_codex_usage() -> ProviderUsage:
             window_hours=5.0,
             used_tokens=recent,
             lifetime_tokens=lifetime,
-            raw_note="chatgpt 后端不可达（代理/网络），剩余额度未知",
+            raw_note="chatgpt.com 不可达（设 HTTPS_PROXY 即可恢复额度），剩余额度未知",
         )
 
     return ProviderUsage(
