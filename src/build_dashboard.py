@@ -292,7 +292,7 @@ def build(out_path: str = DEFAULT_OUT, force_journal: bool = False,
                 note_parts = []
                 if u.lifetime_tokens:
                     note_parts.append(f"累计{fmt_tokens(u.lifetime_tokens)}")
-                note_parts.append("chatgpt.com 不通")
+                note_parts.append("后端不可达")
                 snap.tokens.append(TokenUsage(
                     u.provider, 0.0, "额度未知", "",
                     " · ".join(note_parts)))
@@ -300,12 +300,7 @@ def build(out_path: str = DEFAULT_OUT, force_journal: bool = False,
                 # MiniMax：顶行剩X%·5h窗口；下方小字显示窗口重置倒计时。
                 used = (100 - u.remaining_percent) / 100.0
                 status = f"剩{u.remaining_percent}%"
-                # total_count=0 表示账户未设 5h 上限（unlimited），面板上不要写
-                # 误导性的「5h窗口」字样——改为「无上限」让用户一眼看清状态。
-                if u.total_count:
-                    detail = f"{u.window_hours:.0f}h窗口"
-                else:
-                    detail = "无上限"
+                detail = f"{u.window_hours:.0f}h窗口" if u.window_hours else ""
                 reset_ts = None
                 if u.remains_ms is not None:
                     reset_ts = time.time() + u.remains_ms / 1000.0
@@ -329,11 +324,6 @@ def build(out_path: str = DEFAULT_OUT, force_journal: bool = False,
         elif mmx and mmx.window_end_ms is not None:
             mmx_reset = mmx.window_end_ms / 1000.0
         mmx_txt = f"剩{mmx.remaining_percent}%" if (mmx and mmx.remaining_percent is not None) else "不可用"
-        if mmx and mmx.remaining_percent is not None:
-            if not mmx.total_count:
-                mmx_txt += " (无上限)"
-            elif mmx.window_hours:
-                mmx_txt += f" ({mmx.window_hours:.0f}h窗口)"
         if codex and codex.available and codex.remaining_percent is not None:
             stale = f" 陈旧{codex.stale_age_min}分钟" if codex.stale_age_min else ""
             codex_txt = (f"剩{codex.remaining_percent}% ({codex.window_hours:.0f}h窗口 "
@@ -346,7 +336,7 @@ def build(out_path: str = DEFAULT_OUT, force_journal: bool = False,
                 codex_txt += (f" | 周窗口剩{codex.codex_weekly_remaining}% "
                               f"({wk_h_txt}{' · ' + wk_reset if wk_reset else ''})")
         elif codex and codex.available:
-            codex_txt = f"额度未知 (累计{fmt_tokens(codex.lifetime_tokens)} chatgpt.com 不通)"
+            codex_txt = f"额度未知 (累计{fmt_tokens(codex.lifetime_tokens)} 后端不可达)"
         else:
             codex_txt = "可用" if (codex and codex.available) else "需终端"
         if mmx_reset:
