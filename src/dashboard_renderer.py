@@ -129,6 +129,8 @@ class TokenUsage:
     weekly_ratio: float = 0.0    # 周窗口已用比例（Codex secondary），同一行内子条
     weekly_remaining: int = 0    # 周窗口剩余百分比，如 2
     weekly_reset: str = ""       # 周窗口重置文字，如 约5d后重置
+    weekly_status: str = ""      # 周窗口状态文字（覆盖 weekly_remaining）。如「额度未知」
+                                 # 表示 Codex 主额度拿不到、但仍要画一条「额度未知·周窗口」子条
 
 
 @dataclass
@@ -593,34 +595,36 @@ class DashboardRenderer:
                       fill=BLACK, anchor="mm")
 
     def _panel_calendar(self, draw, box, snap):
+        # 内容为空时直接不画整个面板（不画「搞点什么」标题框），让位置留白
+        # 给同行的 NOTES 或下方 TOKENS，让看板更紧凑。
+        if not snap.make_summary:
+            return
         cx = self._panel_frame(draw, box, "搞点什么", "C-02")
         x0, y0, x1, y1 = cx
 
         # 内容来自日记「🛠️ 搞点什么」区块的『概要』：摘要文字，非待办清单
-        lines = snap.make_summary or []
-        if not lines:
-            draw.text((x0, y0 + 6), "今日无安排",
-                      font=self.f_body, fill=GRAY_DARK)
-            return
-
+        lines = snap.make_summary
         cy = y0 + 10
         self._draw_bulleted_items(draw, lines[:3], x0, y0, x1, y1, cy,
                                   font=self.f_body, max_lines=4, line_h=32,
                                   indent=20, dot_r=3, gap=6)
 
     def _panel_notes(self, draw, box, notes):
+        # 空内容时不画 NOTES 面板，让位置让给其他面板
+        if not notes:
+            return
         cx = self._panel_frame(draw, box, "NOTES", "N-02")
         x0, y0, x1, y1 = cx
         cy = y0 + 8
-        if not notes:
-            draw.text((x0, cy), "今日无笔记", font=self.f_body, fill=GRAY_DARK)
-            return
         # 每条自动换行（不截断），首行带项目符号
         self._draw_bulleted_items(draw, notes[:3], x0, y0, x1, y1, cy,
                                   font=self.f_body, max_lines=4, line_h=30,
                                   indent=20, dot_r=3, gap=4)
 
     def _panel_todo(self, draw, box, todos):
+        # 空内容时不画 TO DO QUEUE 面板，让位置让给其他面板
+        if not todos:
+            return
         cx = self._panel_frame(draw, box, "TO DO QUEUE", "O-04")
         x0, y0, x1, y1 = cx
         cy = y0 + 14
@@ -689,15 +693,21 @@ class DashboardRenderer:
                           fill=GRAY_DARK, anchor="ra")
                 sub += 30
 
-            # 周窗口子行：同一 Codex 行内，不另起名称；右侧状态「剩X%·周窗口」，
-            # 重置时间放在状态条下方，与主行格式一致。
-            if tk.weekly_ratio:
-                wk_status = (f"剩{tk.weekly_remaining}%" if tk.weekly_remaining else "—")
+            # 周窗口子行：同一 Codex 行内，不另起名称；右侧状态优先取
+            # weekly_status（如「额度未知」），缺省再拼 weekly_remaining。
+            # 触发条件：weekly_ratio>0（正常数据）或 weekly_status 非空（兜底显示）。
+            if tk.weekly_ratio or tk.weekly_status:
+                if tk.weekly_status:
+                    wk_status = tk.weekly_status
+                else:
+                    wk_status = (f"剩{tk.weekly_remaining}%" if tk.weekly_remaining else "—")
                 wk_status += "·周窗口"
                 draw.text((x1, sub), wk_status, font=self.f_body,
                           fill=BLACK, anchor="ra")
+                # 兜底场景（额度未知）下进度条占位 0；正常场景按真实比例
+                bar_ratio = tk.weekly_ratio if tk.weekly_ratio else 0.0
                 wbar_y = sub + 36
-                self._segmented_bar(draw, (x0, wbar_y, x1, wbar_y), tk.weekly_ratio)
+                self._segmented_bar(draw, (x0, wbar_y, x1, wbar_y), bar_ratio)
                 sub = wbar_y + 30
                 if tk.weekly_reset:
                     draw.text((x1, sub), tk.weekly_reset, font=self.f_small,

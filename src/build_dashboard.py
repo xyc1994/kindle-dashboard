@@ -200,20 +200,24 @@ def build(out_path: str = DEFAULT_OUT, force_journal: bool = False,
             ]
             print(f"[待办] 已接入 {len(snap.todos)} 条（来自今日日记待办）[{tag}]")
         else:
-            print("[待办] 今日日记无待办，沿用演示数据")
+            # 空内容：不沿用 demo 数据，让渲染器整体隐藏 TO DO 面板
+            snap.todos = []
+            print("[待办] 今日日记无待办，面板留空")
 
         if panels.notes:
             snap.notes = panels.notes
             print(f"[笔记] 已接入 {len(snap.notes)} 条（当日复盘概要）[{tag}]")
         else:
-            snap.notes = []   # 今日无复盘概要/叙事 → 留空，由渲染器显示「今日无笔记」占位
-            print("[笔记] 今日无复盘概要，Notes 留空")
+            snap.notes = []   # 今日无复盘概要/叙事 → 留空，由渲染器显示「面板整体隐藏」
+            print("[笔记] 今日无复盘概要，面板留空")
 
         if panels.make_summary:
             snap.make_summary = panels.make_summary
             print(f"[搞点什么] 已接入 {len(snap.make_summary)} 行"
                   f"（来自日记「搞点什么」区块概要）[{tag}]")
         else:
+            # 空内容：不沿用 demo 数据，让渲染器整体隐藏「搞点什么」面板
+            snap.make_summary = []
             print("[搞点什么] 日记无「搞点什么」概要，面板留空")
     except Exception as e:
         print(f"[Obsidian] 抽取失败，沿用演示数据：{e}", file=sys.stderr)
@@ -286,16 +290,19 @@ def build(out_path: str = DEFAULT_OUT, force_journal: bool = False,
                 snap.tokens.append(TokenUsage(u.provider, used, status, detail, note,
                                              **wk))
             elif u.provider == "Codex" and u.available:
-                # 拿不到剩余配额：不再显示「5h用X」这类已用量 token——它会被误
-                # 读成额度进度，而本地日志其实没有配额上限。改为诚实标注
-                #「额度未知」，累计 token 只作为补充小字放在进度条下方。
+                # 拿不到剩余配额：主条显示「额度未知·5h窗口」+ 累计 token 备注；
+                # 同时画一条「额度未知·周窗口」子条（通过 weekly_status 字段触发），
+                # 让用户在网络不通时也能看到 Codex 在面板里仍占位、且识别出「周窗口
+                # 也拿不到」——比只画一条更完整，避免误以为只丢了一个窗口。
                 note_parts = []
                 if u.lifetime_tokens:
                     note_parts.append(f"累计{fmt_tokens(u.lifetime_tokens)}")
                 note_parts.append("后端不可达")
                 snap.tokens.append(TokenUsage(
-                    u.provider, 0.0, "额度未知", "",
-                    " · ".join(note_parts)))
+                    u.provider, 0.0, "额度未知", "5h窗口",
+                    " · ".join(note_parts),
+                    weekly_status="额度未知",
+                ))
             elif u.available and u.remaining_percent is not None:
                 # MiniMax：顶行剩X%·5h窗口；下方小字显示窗口重置倒计时。
                 used = (100 - u.remaining_percent) / 100.0
