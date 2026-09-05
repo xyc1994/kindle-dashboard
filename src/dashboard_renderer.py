@@ -595,39 +595,41 @@ class DashboardRenderer:
                       fill=BLACK, anchor="mm")
 
     def _panel_calendar(self, draw, box, snap):
-        # 内容为空时直接不画整个面板（不画「搞点什么」标题框），让位置留白
-        # 给同行的 NOTES 或下方 TOKENS，让看板更紧凑。
-        if not snap.make_summary:
-            return
+        # 框架和「搞点什么」标题照画；空内容时不显示「今日无安排」占位文字。
         cx = self._panel_frame(draw, box, "搞点什么", "C-02")
         x0, y0, x1, y1 = cx
 
         # 内容来自日记「🛠️ 搞点什么」区块的『概要』：摘要文字，非待办清单
-        lines = snap.make_summary
+        lines = snap.make_summary or []
+        if not lines:
+            return
+
         cy = y0 + 10
         self._draw_bulleted_items(draw, lines[:3], x0, y0, x1, y1, cy,
                                   font=self.f_body, max_lines=4, line_h=32,
                                   indent=20, dot_r=3, gap=6)
 
     def _panel_notes(self, draw, box, notes):
-        # 空内容时不画 NOTES 面板，让位置让给其他面板
-        if not notes:
-            return
+        # 框架和 NOTES 标题照画；空内容时不显示「今日无笔记」占位文字。
         cx = self._panel_frame(draw, box, "NOTES", "N-02")
         x0, y0, x1, y1 = cx
         cy = y0 + 8
+        if not notes:
+            return
         # 每条自动换行（不截断），首行带项目符号
         self._draw_bulleted_items(draw, notes[:3], x0, y0, x1, y1, cy,
                                   font=self.f_body, max_lines=4, line_h=30,
                                   indent=20, dot_r=3, gap=4)
 
     def _panel_todo(self, draw, box, todos):
-        # 空内容时不画 TO DO QUEUE 面板，让位置让给其他面板
-        if not todos:
-            return
+        # 框架和 TO DO QUEUE 标题照画；空内容时不显示任何占位文字。
         cx = self._panel_frame(draw, box, "TO DO QUEUE", "O-04")
         x0, y0, x1, y1 = cx
         cy = y0 + 14
+        if not todos:
+            return
+        box_size = 22
+        text_x = x0 + 32
         box_size = 22
         text_x = x0 + 32
         line_h = 32
